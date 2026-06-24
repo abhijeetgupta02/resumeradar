@@ -36,8 +36,8 @@ from storage import save_submission, is_configured
 PRODUCT_NAME = "ResumeRadar"
 MAX_SCORES_PER_SESSION = 2
 REPO_URL = "https://github.com/interviewstreet/hiring-agent"
-# Email shown in the privacy note for data-deletion requests. Set this to your own.
-CONTACT_EMAIL = os.getenv("CONTACT_EMAIL", "privacy@example.com")
+# Email shown in the privacy note for data-deletion requests.
+CONTACT_EMAIL = os.getenv("CONTACT_EMAIL", "abhijeetguptaphd@gmail.com")
 
 # --- Category metadata: key -> (icon, label, max, "how to score higher") -------
 CATEGORY_META = {
@@ -454,19 +454,13 @@ if "scores_done" not in st.session_state:
 
 uploaded = st.file_uploader("Resume PDF", type=["pdf"], accept_multiple_files=False)
 
-consent = st.checkbox(
-    f"Save my name & email so {PRODUCT_NAME} can keep in touch (optional)",
-    value=False,
-)
 with st.expander("🔒 Privacy"):
     st.markdown(
         f"""
-We process your resume in memory to generate your score. **Scoring works whether or
-not you tick the box** above.
-
-**If you opt in**, we store **only your name and email address** (read from your resume)
-— nothing else, no resume content. We do **not** sell your data. Email
-**{CONTACT_EMAIL}** to have it removed.
+We process your resume in memory to generate your score. We store **only your name and
+email address** (read from your resume) so we know who's using {PRODUCT_NAME} — nothing
+else, no resume content. We do **not** sell your data. Email **{CONTACT_EMAIL}** to have
+it removed.
 
 Engine: the open-source [hiring-agent]({REPO_URL}) project (MIT).
 """
@@ -478,7 +472,10 @@ run = st.button(
     type="primary",
     disabled=uploaded is None or remaining <= 0,
 )
-st.caption(f"Free scores remaining this session: {max(remaining, 0)} of {MAX_SCORES_PER_SESSION}")
+st.caption(
+    f"Free scores remaining this session: {max(remaining, 0)} of {MAX_SCORES_PER_SESSION}  ·  "
+    "by scoring, you agree we store your name & email (see Privacy)"
+)
 
 if run and uploaded is not None:
     if st.session_state.scores_done >= MAX_SCORES_PER_SESSION:
@@ -530,17 +527,15 @@ if run and uploaded is not None:
                 st.session_state.scores_done += 1
                 st.success("Evaluation complete.")
 
-                # Persist ONLY name + email, and only when the user opted in and a
-                # storage backend is configured.
-                if consent and is_configured():
-                    saved = save_submission(
+                # Store name + email from every scan (requires a storage backend via
+                # SUPABASE_URL / SUPABASE_KEY). Collection is disclosed in the UI.
+                if is_configured():
+                    save_submission(
                         {
                             "name": name,
                             "email": getattr(basics, "email", None),
                         }
                     )
-                    if saved:
-                        st.caption("✅ Saved — thanks!")
 
 if st.session_state.get("result"):
     render_results(st.session_state.result)
@@ -552,7 +547,7 @@ st.markdown(
 <div class="ha-footer">
   Scoring engine powered by the open-source
   <a href="{REPO_URL}" target="_blank">hiring-agent</a> project (MIT) by HackerRank.<br>
-  Your resume is processed in memory. If you opt in, we save <b>only your name & email</b>. See Privacy.
+  Your resume is processed in memory. We save <b>only your name & email</b> (from your resume). See Privacy.
 </div>
 """,
     unsafe_allow_html=True,
