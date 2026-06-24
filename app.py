@@ -35,7 +35,9 @@ from storage import save_submission, is_configured
 
 PRODUCT_NAME = "ResumeRadar"
 MAX_SCORES_PER_SESSION = 2
-REPO_URL = "https://github.com/interviewstreet/hiring-agent"
+REPO_URL = "https://github.com/interviewstreet/hiring-agent"  # scoring engine (MIT)
+GITHUB_URL = "https://github.com/abhijeetgupta02"  # creator's GitHub
+WEBSITE_URL = "https://abhijeetgupta.me"  # creator's site
 # Email shown in the privacy note for data-deletion requests.
 CONTACT_EMAIL = os.getenv("CONTACT_EMAIL", "abhijeetguptaphd@gmail.com")
 
@@ -190,9 +192,25 @@ st.markdown(
 .ha-badge-self { background:#2a2440; color:#b9a7ff; }
 .ha-math { color:#aab2c0; font-size:.92rem; }
 .ha-math b { color:#E6E9EF; }
-.ha-footer { color:#6b7384; font-size:.83rem; text-align:center; margin:2.4rem 0 1rem;
-             border-top:1px solid #232a39; padding-top:1.1rem; line-height:1.6; }
-a { color:#9d8bff !important; }
+.ha-hero .accent { color:#9d8bff; }
+.ha-badge { display:inline-block; background:#1a1530; color:#b9a7ff; border:1px solid #2e2550;
+  font-size:.74rem; font-weight:700; padding:4px 12px; border-radius:999px; letter-spacing:.03em; margin-bottom:.8rem; }
+.ha-how { display:flex; gap:14px; margin:1.8rem 0 .6rem; flex-wrap:wrap; }
+.ha-step { flex:1; min-width:200px; background:#11151e; border:1px solid #232a39; border-radius:14px; padding:16px 18px; }
+.ha-step .num { color:#6b7384; font-size:.72rem; font-weight:700; letter-spacing:.08em; }
+.ha-step .ic { font-size:1.5rem; margin-top:2px; }
+.ha-step .t { font-weight:700; font-size:1rem; margin:7px 0 3px; }
+.ha-step .d { color:#9aa3b2; font-size:.86rem; line-height:1.45; }
+.ha-chips { display:flex; gap:9px; flex-wrap:wrap; margin:1.1rem 0 .2rem; }
+.ha-chips span { background:#161b26; border:1px solid #232a39; border-radius:999px; padding:6px 13px;
+  font-size:.82rem; color:#c5ccd9; }
+.ha-landtitle { font-size:1.15rem; font-weight:750; margin:1.6rem 0 .2rem; }
+.ha-footer { color:#6b7384; text-align:center; margin:2.6rem 0 1rem; border-top:1px solid #232a39; padding-top:1.2rem; }
+.ha-footer-links { font-size:.9rem; margin-bottom:.55rem; }
+.ha-footer-links a { font-weight:500; }
+.ha-footer-fine { font-size:.74rem; color:#5a6170; line-height:1.55; max-width:760px; margin:0 auto; }
+a { color:#9d8bff !important; text-decoration:none; }
+a:hover { text-decoration:underline; }
 </style>
 """,
     unsafe_allow_html=True,
@@ -202,10 +220,12 @@ st.markdown(
     f"""
 <div class="ha-hero">
   <div class="ha-brand">⚡ {PRODUCT_NAME}</div>
-  <h1>How strong is your resume, really?</h1>
-  <div class="ha-sub">Upload your resume and get an instant, explainable score across open
-  source, projects, production experience and skills — plus the exact fixes to rank higher.</div>
-  <div class="ha-trust">Free · no signup · results in ~60s</div>
+  <div class="ha-badge">AI resume scoring for engineers</div>
+  <h1>How strong is your resume, <span class="accent">really?</span></h1>
+  <div class="ha-sub">Get an instant, explainable score across open source, projects, production
+  experience and technical skills — with the exact fixes to rank higher. We even read your
+  GitHub to back it up.</div>
+  <div class="ha-trust">✦ Free · no signup · results in ~60s</div>
 </div>
 """,
     unsafe_allow_html=True,
@@ -454,28 +474,13 @@ if "scores_done" not in st.session_state:
 
 uploaded = st.file_uploader("Resume PDF", type=["pdf"], accept_multiple_files=False)
 
-with st.expander("🔒 Privacy"):
-    st.markdown(
-        f"""
-We process your resume in memory to generate your score. We store **only your name and
-email address** (read from your resume) so we know who's using {PRODUCT_NAME} — nothing
-else, no resume content. We do **not** sell your data. Email **{CONTACT_EMAIL}** to have
-it removed.
-
-Engine: the open-source [hiring-agent]({REPO_URL}) project (MIT).
-"""
-    )
-
 remaining = MAX_SCORES_PER_SESSION - st.session_state.scores_done
 run = st.button(
     "⚡ Score my resume",
     type="primary",
     disabled=uploaded is None or remaining <= 0,
 )
-st.caption(
-    f"Free scores remaining this session: {max(remaining, 0)} of {MAX_SCORES_PER_SESSION}  ·  "
-    "by scoring, you agree we store your name & email (see Privacy)"
-)
+st.caption(f"Free scores remaining this session: {max(remaining, 0)} of {MAX_SCORES_PER_SESSION}")
 
 if run and uploaded is not None:
     if st.session_state.scores_done >= MAX_SCORES_PER_SESSION:
@@ -539,15 +544,40 @@ if run and uploaded is not None:
 
 if st.session_state.get("result"):
     render_results(st.session_state.result)
-elif uploaded is None:
-    st.info("⬆️ Upload a resume PDF to get your score.")
+else:
+    st.markdown(
+        """
+<div class="ha-landtitle">How it works</div>
+<div class="ha-how">
+  <div class="ha-step"><div class="num">STEP 1</div><div class="ic">📄</div><div class="t">Upload your resume</div><div class="d">A text-based PDF — processed in seconds.</div></div>
+  <div class="ha-step"><div class="num">STEP 2</div><div class="ic">🔍</div><div class="t">We parse it &amp; scan GitHub</div><div class="d">Sections extracted, your repos analyzed and classified.</div></div>
+  <div class="ha-step"><div class="num">STEP 3</div><div class="ic">📊</div><div class="t">Get your score &amp; fixes</div><div class="d">An explainable 0–100 with the exact next steps.</div></div>
+</div>
+<div class="ha-landtitle">What we score</div>
+<div class="ha-chips">
+  <span>🌐 Open Source · 35</span>
+  <span>🚀 Self Projects · 30</span>
+  <span>🏢 Production · 25</span>
+  <span>💻 Technical Skills · 10</span>
+  <span>⭐ Bonus · +20</span>
+</div>
+""",
+        unsafe_allow_html=True,
+    )
 
 st.markdown(
     f"""
 <div class="ha-footer">
-  Scoring engine powered by the open-source
-  <a href="{REPO_URL}" target="_blank">hiring-agent</a> project (MIT) by HackerRank.<br>
-  Your resume is processed in memory. We save <b>only your name & email</b> (from your resume). See Privacy.
+  <div class="ha-footer-links">
+    Built by Abhijeet Gupta · <a href="{WEBSITE_URL}" target="_blank">abhijeetgupta.me</a> ·
+    <a href="{GITHUB_URL}" target="_blank">GitHub</a> ·
+    <a href="{REPO_URL}" target="_blank">Engine: hiring-agent (MIT)</a>
+  </div>
+  <div class="ha-footer-fine">
+    {PRODUCT_NAME} processes your resume in memory to generate your score and stores only your
+    name and email (read from your resume) so we know who's using it — nothing else, no resume
+    content. We don't sell your data. Email {CONTACT_EMAIL} to have it removed.
+  </div>
 </div>
 """,
     unsafe_allow_html=True,
